@@ -9,6 +9,13 @@ output, and monitor mode.
 
 ## Install
 
+With Homebrew, after publishing a tap repository named `homebrew-vmrss`:
+
+```sh
+brew tap Nsttt/vmrss
+brew install vmrss
+```
+
 Download the latest macOS archive from the GitHub release assets:
 
 - `vmrss-<tag>-macos-arm64.tar.gz` for Apple Silicon Macs
@@ -33,6 +40,39 @@ The binary is written to:
 ```sh
 target/release/vmrss
 ```
+
+## Homebrew Tap
+
+The formula lives in `Formula/vmrss.rb` and installs the prebuilt release
+archive for the current Mac architecture.
+
+To publish it as a tap:
+
+```sh
+gh repo create Nsttt/homebrew-vmrss --public --description "Homebrew tap for vmrss"
+git clone https://github.com/Nsttt/homebrew-vmrss.git /tmp/homebrew-vmrss
+mkdir -p /tmp/homebrew-vmrss/Formula
+cp Formula/vmrss.rb /tmp/homebrew-vmrss/Formula/vmrss.rb
+cd /tmp/homebrew-vmrss
+git add Formula/vmrss.rb
+git commit -m "feat: add vmrss formula"
+git push origin main
+```
+
+Before publishing, validate through a local tap:
+
+```sh
+brew tap-new Nsttt/vmrss
+cp Formula/vmrss.rb "$(brew --repo Nsttt/vmrss)/Formula/vmrss.rb"
+brew audit --strict --online Nsttt/vmrss/vmrss
+brew install Nsttt/vmrss/vmrss
+brew test Nsttt/vmrss/vmrss
+```
+
+The formula currently uses `license :cannot_represent` because this repository
+does not declare a project license yet. Add a `LICENSE` file and update the
+formula with its SPDX identifier before publishing if you want the tap metadata
+to show a concrete license.
 
 ## Usage
 
