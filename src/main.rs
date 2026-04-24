@@ -61,10 +61,10 @@ fn main() {
         }
 
         println!();
-        if let Some(stop_at) = stop_at {
-            if Instant::now() >= stop_at {
-                break;
-            }
+        if let Some(stop_at) = stop_at
+            && Instant::now() >= stop_at
+        {
+            break;
         }
         thread::sleep(config.interval);
     }
