@@ -75,10 +75,3 @@ process data:
 `--peak` reports the highest RSS observed while this tool is running. `--swap`
 is included for CLI compatibility, but macOS does not expose per-process swap in
 the same way Linux `/proc/<pid>/status` does, so it reports `0.00 MB`.
-
-## Releases
-
-Publishing a GitHub release runs `.github/workflows/release.yml`. The workflow
-builds macOS ARM64 and x86_64 binaries, packages them as `.tar.gz` files, writes
-SHA-256 checksums, uploads them as workflow artifacts, and attaches them to the
-release.
