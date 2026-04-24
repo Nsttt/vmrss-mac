@@ -88,3 +88,97 @@ jobs:
             "${{ steps.package.outputs.asset }}" \
             "${{ steps.package.outputs.asset }}.sha256" \
             --clobber
+
+  publish-homebrew-tap:
+    name: Publish Homebrew tap
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'release' && github.event.action == 'published'
+    env:
+      TAP_REPOSITORY: Nsttt/homebrew-taps
+      TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+      RELEASE_TAG: ${{ github.event.release.tag_name }}
+
+    steps:
+      - name: Check tap token
+        run: |
+          if [ -z "$TAP_TOKEN" ]; then
+            echo "Missing HOMEBREW_TAP_TOKEN secret with write access to $TAP_REPOSITORY" >&2
+            exit 1
+          fi
+
+      - name: Download release checksums
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download "$RELEASE_TAG" \
+            --repo "${{ github.repository }}" \
+            --pattern "vmrss-$RELEASE_TAG-macos-arm64.tar.gz.sha256" \
+            --pattern "vmrss-$RELEASE_TAG-macos-x86_64.tar.gz.sha256"
+
+      - name: Resolve formula values
+        id: formula
+        run: |
+          version="${RELEASE_TAG#v}"
+          arm_sha="$(awk '{print $1}' "vmrss-$RELEASE_TAG-macos-arm64.tar.gz.sha256")"
+          intel_sha="$(awk '{print $1}' "vmrss-$RELEASE_TAG-macos-x86_64.tar.gz.sha256")"
+          {
+            echo "version=$version"
+            echo "arm_sha=$arm_sha"
+            echo "intel_sha=$intel_sha"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Checkout tap
+        uses: actions/checkout@v6
+        with:
+          repository: ${{ env.TAP_REPOSITORY }}
+          token: ${{ env.TAP_TOKEN }}
+          path: tap
+
+      - name: Render formula
+        run: |
+          mkdir -p tap/Formula
+          cat > tap/Formula/vmrss.rb <<'RUBY'
+          class Vmrss < Formula
+            desc "Inspect resident memory usage by process tree on macOS"
+            homepage "https://github.com/Nsttt/vmrss-mac"
+            version "${{ steps.formula.outputs.version }}"
+            license "MIT"
+
+            depends_on :macos
+
+            on_macos do
+              on_arm do
+                url "https://github.com/Nsttt/vmrss-mac/releases/download/${{ env.RELEASE_TAG }}/vmrss-${{ env.RELEASE_TAG }}-macos-arm64.tar.gz"
+                sha256 "${{ steps.formula.outputs.arm_sha }}"
+              end
+
+              on_intel do
+                url "https://github.com/Nsttt/vmrss-mac/releases/download/${{ env.RELEASE_TAG }}/vmrss-${{ env.RELEASE_TAG }}-macos-x86_64.tar.gz"
+                sha256 "${{ steps.formula.outputs.intel_sha }}"
+              end
+            end
+
+            def install
+              bin.install "vmrss"
+            end
+
+            test do
+              assert_match "total:", shell_output("#{bin}/vmrss #{Process.pid}")
+            end
+          end
+          RUBY
+          ruby -c tap/Formula/vmrss.rb
+
+      - name: Commit and push formula
+        working-directory: tap
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Formula/vmrss.rb
+          if git diff --cached --quiet; then
+            echo "Homebrew formula already up to date"
+            exit 0
+          fi
+          git commit -m "vmrss $RELEASE_TAG"
+          git push

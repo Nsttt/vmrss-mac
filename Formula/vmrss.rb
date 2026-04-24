@@ -2,7 +2,7 @@ class Vmrss < Formula
   desc "Inspect resident memory usage by process tree on macOS"
   homepage "https://github.com/Nsttt/vmrss-mac"
   version "0.1.1"
-  license :cannot_represent
+  license "MIT"
 
   depends_on :macos
 
