@@ -72,6 +72,7 @@ process data:
 - `pgrep` for process lookup and child process discovery
 - `proc_pid_rusage` for per-process disk I/O counters
 
-`--peak` reports the highest RSS observed while this tool is running. `--swap`
-is included for CLI compatibility, but macOS does not expose per-process swap in
-the same way Linux `/proc/<pid>/status` does, so it reports `0.00 MB`.
+`--peak` reports macOS' lifetime peak physical footprint for each process when
+available, and the highest total RSS observed while this tool is running.
+`--swap` reads the swapped column from `vmmap -summary`, so it can be slower and
+may report `0.00 MB` when macOS cannot inspect the target process.

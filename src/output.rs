@@ -18,7 +18,15 @@ pub fn display_processes(
     if config.format == OutputFormat::Json {
         let mut entries = Vec::new();
         for pid in pids {
-            let processes = get_vmrss(config.io, *pid, peak_memory, last_io, elapsed);
+            let processes = get_vmrss(
+                config.io,
+                config.peak,
+                config.swap,
+                *pid,
+                peak_memory,
+                last_io,
+                elapsed,
+            );
             if processes.is_empty() {
                 continue;
             }
@@ -37,7 +45,15 @@ pub fn display_processes(
             println!();
         }
 
-        let processes = get_vmrss(config.io, *pid, peak_memory, last_io, elapsed);
+        let processes = get_vmrss(
+            config.io,
+            config.peak,
+            config.swap,
+            *pid,
+            peak_memory,
+            last_io,
+            elapsed,
+        );
         if processes.is_empty() {
             continue;
         }
